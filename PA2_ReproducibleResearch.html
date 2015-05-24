@@ -65,9 +65,9 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 <p>The events in the database start in the year 1950 and end in November 2011 and it can be downloaded <a href="ftp://ftp.ncdc.noaa.gov/pub/data/swdi/stormevents/csvfiles/">here</a>. There is also a kind of codebook explaining the storm database, hit this <a href="https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf">link</a> to download it. As a brief summary, we can conclude the following:</p>
 <ol style="list-style-type: decimal">
 <li><p>The most harmful weather events causing the most fatalities and injuries to human beings across the US are the following: <strong>a. Injuries</strong>: <em>Tornado (91346), Wind (6957), Flood (6789)</em>, <strong>b. Fatalities</strong>: <em>Tornado (5633), Excessive heat (1903), Flash Flood (978)</em></p></li>
-<li><p>The greatest economic consequences have been due to the following weather events: <strong>a. Property costs</strong>: <em>Flood (144B), Hurrican/Thyphoon (69B), Tornado (56B)</em>, <strong>b. Crop costs</strong>: <em>Drought (13.9B USD), Flood (5.7B USD), River Flood (5B USD)</em></p></li>
+<li><p>The greatest economic consequences have been due to the following weather events: <strong>a. Property costs</strong>: <em>Flood (144B), Hurricane/Thyphoon (69B), Tornado (56B)</em>, <strong>b. Crop costs</strong>: <em>Drought (13.9B USD), Flood (5.7B USD), River Flood (5B USD)</em></p></li>
 </ol>
-<p>For further details, check out the complete report here attached. In order to reproduce completely this analysis, you can find all kind of information and the R code in this <a href>git repository</a>.</p>
+<p>For further details, check out the complete report here attached. In order to reproduce completely this analysis, you can find all kind of information and the R code in this <a href="https://github.com/RODCAR0/RepData_PeerAssessment2">git repository</a>.</p>
 <p><br> <br></p>
 </div>
 <div id="data-processing" class="section level2">
@@ -80,7 +80,7 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 Sys.setlocale(&quot;LC_ALL&quot;, &quot;English&quot;)</code></pre>
 <p>We read the data that it’s compressed as bz2. Read csv is able to read these kind of files directly.</p>
 <pre class="r"><code>stormData &lt;- read.csv(&quot;./data/repdata_data_StormData.csv.bz2&quot;)</code></pre>
-<p>We should focus on human health damages and the greatest economic impact across the US, so we can dismiss those records without any consequences and filter out those fields unnecesary for these purposes.</p>
+<p>We should focus on human health damages and the greatest economic impact across the US, so we can dismiss those records without any consequences and filter out those fields unnecesaries for these purposes.</p>
 <pre class="r"><code>damageData &lt;- select(stormData, EVTYPE, FATALITIES, INJURIES, PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP) %&gt;% 
      filter((!is.na(FATALITIES) &amp; FATALITIES &gt; 0) | (!is.na(INJURIES) &amp; INJURIES &gt; 0) | (is.na(PROPDMG) | PROPDMG &gt; 0) 
             | (is.na(CROPDMG) | CROPDMG &gt; 0))

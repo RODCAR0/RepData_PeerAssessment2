@@ -16,9 +16,9 @@ The events in the database start in the year 1950 and end in November 2011 and i
 
 1. The most harmful weather events causing the most fatalities and injuries to human beings across the US are the following: **a. Injuries**: *Tornado (91346), Wind (6957), Flood (6789)*, **b. Fatalities**: *Tornado (5633), Excessive heat (1903), Flash Flood (978)*
      
-2. The greatest economic consequences have been due to the following weather events: **a. Property costs**: *Flood (144B), Hurrican/Thyphoon (69B), Tornado (56B)*, **b. Crop costs**: *Drought (13.9B USD), Flood (5.7B USD), River Flood (5B USD)*
+2. The greatest economic consequences have been due to the following weather events: **a. Property costs**: *Flood (144B), Hurricane/Thyphoon (69B), Tornado (56B)*, **b. Crop costs**: *Drought (13.9B USD), Flood (5.7B USD), River Flood (5B USD)*
 
-For further details, check out the complete report here attached. In order to reproduce completely this analysis, you can find all kind of information and the R code in this [git repository]().
+For further details, check out the complete report here attached. In order to reproduce completely this analysis, you can find all kind of information and the R code in this [git repository](https://github.com/RODCAR0/RepData_PeerAssessment2).
 
 <br>
 <br>
