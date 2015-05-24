@@ -1,0 +1,215 @@
+---
+title: "Weather Events damage consequences in the US"
+author: "RODCAR0"
+date: "Sunday, May 24, 2015"
+output: html_document
+---
+
+<br>
+<br>
+
+##Synopsis
+
+Based on the storm database published by NOAA (National Oceanic and Atmospheric Administration), the report shows which weather events have been most harmful with respect to population health and which ones with the greatest economic consequences.
+
+The events in the database start in the year 1950 and end in November 2011 and it can be downloaded [here](ftp://ftp.ncdc.noaa.gov/pub/data/swdi/stormevents/csvfiles/). There is also a kind of codebook explaining the storm database, hit this [link](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf) to download it. As a brief summary, we can conclude the following:
+
+1. The most harmful weather events causing the most fatalities and injuries to human beings across the US are the following: **a. Injuries**: *Tornado (91346), Wind (6957), Flood (6789)*, **b. Fatalities**: *Tornado (5633), Excessive heat (1903), Flash Flood (978)*
+     
+2. The greatest economic consequences have been due to the following weather events: **a. Property costs**: *Flood (144B), Hurrican/Thyphoon (69B), Tornado (56B)*, **b. Crop costs**: *Drought (13.9B USD), Flood (5.7B USD), River Flood (5B USD)*
+
+For further details, check out the complete report here attached. In order to reproduce completely this analysis, you can find all kind of information and the R code in this [git repository]().
+
+<br>
+<br>
+
+##Data Processing
+
+Let's go step by step to see how the storm database has been processed with R in order to be analyzed properly.
+
+These are the packages used to clean and plot (see point results) the data.
+
+```{r results='hide', warning=FALSE, comment=FALSE, warning=FALSE}
+suppressPackageStartupMessages(library(dplyr))
+
+## English by default
+Sys.setlocale("LC_ALL", "English")
+```
+
+We read the data that it's compressed as bz2. Read csv is able to read these kind of files directly.
+
+```{r cache=TRUE, results='hide', warning=FALSE, comment=FALSE, warning=FALSE}
+stormData <- read.csv("./data/repdata_data_StormData.csv.bz2")
+```
+
+We should focus on human health damages and the greatest economic impact across the US, so we can dismiss those records without any consequences and filter out those fields unnecesaries for these purposes.
+
+```{r cache=TRUE}
+damageData <- select(stormData, EVTYPE, FATALITIES, INJURIES, PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP) %>% 
+     filter((!is.na(FATALITIES) & FATALITIES > 0) | (!is.na(INJURIES) & INJURIES > 0) | (is.na(PROPDMG) | PROPDMG > 0) 
+            | (is.na(CROPDMG) | CROPDMG > 0))
+
+
+damageData$PROPDMGEXP <- as.character(damageData$PROPDMGEXP)
+damageData$CROPDMGEXP <- as.character(damageData$CROPDMGEXP)
+
+```
+
+As we can see in the R code, these are the fields used for the analysis:
+
+1. *EVTYPE*. Weather event
+2. *FATALITIES*. Number of deaths
+3. *INJURIES*. People who were wounded
+4. *PROPDMG*. Economic Property Damages
+5. *PROPDMGEXP*. Exponential for PROPDMG
+6. *CROPDMG*. Economic Crop Damages
+7. *CROPDMGEXP*. Exponential for CROPDMG
+
+We transform exponential fields from characters to numeric in order to calculate the economic values. These are the transformations to be applied:
+
+1. *H/h* = 2 (Hundreds)
+2. *K/k* = 3 (Thousands)
+3. *M/m* = 6 (millions)
+4. *B/b* = 9 (Billions)
+5. *"-"* = 0 (Unknown)
+6. *"+"* = 0 (Unknown)
+7. *""* = 0 (Unknown)
+8. *"?"* = 0 (Unknown)
+
+```{r}
+## Convert Exponentials from letters to numbers.
+damageData[(damageData$PROPDMGEXP == "H" | damageData$PROPDMGEXP == "h"), ]$PROPDMGEXP <- 2
+damageData[(damageData$PROPDMGEXP == "K" | damageData$PROPDMGEXP == "k"), ]$PROPDMGEXP <- 3
+damageData[(damageData$PROPDMGEXP == "M" | damageData$PROPDMGEXP == "m"), ]$PROPDMGEXP <- 6
+damageData[(damageData$PROPDMGEXP == "B" | damageData$PROPDMGEXP == "b"), ]$PROPDMGEXP <- 9
+damageData[damageData$PROPDMGEXP == "-", ]$PROPDMGEXP <- 0
+damageData[damageData$PROPDMGEXP == "+", ]$PROPDMGEXP <- 0
+damageData[damageData$PROPDMGEXP == "", ]$PROPDMGEXP <- 0
+damageData[damageData$CROPDMGEXP == "?", ]$CROPDMGEXP <- 0
+
+damageData[(damageData$CROPDMGEXP == "K" | damageData$CROPDMGEXP == "k"), ]$CROPDMGEXP <- 3
+damageData[(damageData$CROPDMGEXP == "M" | damageData$CROPDMGEXP == "m"), ]$CROPDMGEXP <- 6
+damageData[(damageData$CROPDMGEXP == "B" | damageData$CROPDMGEXP == "b"), ]$CROPDMGEXP <- 9
+damageData[damageData$CROPDMGEXP == "", ]$CROPDMGEXP <- 0
+
+damageData$PROPDMGEXP <- as.numeric(damageData$PROPDMGEXP)
+damageData$CROPDMGEXP <- as.numeric(damageData$CROPDMGEXP)
+```
+For a more accurate analysis, a data processing should be performed for the field event types. In theory, there are 49 different types according to the code book provided by NOAA but we can see up to 488 after filtering out records without any consequences.
+
+Now we are ready to calculate the economic values using the numeric exponentials. So two fields are added in the table:
+
+1. *PROPDMGVAL* = Property Economic Cost (PROPDMG*10^PROPDMGEXP)
+2. *CROPDMGVAL* = Crop Economic Cost (CROPDMG*10^CROPDMGEXP)
+
+
+```{r}
+damageData <- mutate(damageData, PROPDMGVAL = PROPDMG*10^PROPDMGEXP, CROPDMGVAL=CROPDMG*10^CROPDMGEXP)
+```
+<br>
+<br>
+
+##Results
+
+At this point, using our tidy data (data frame **damageData**) we are ready to find out damages caused by weather events.
+
+<br>
+**FATALITIES/INJURIES**
+
+We aggregate data by weather event types (EVTYPE). So two fields have been added to our table:
+
+1. *TOTAL_FATALITIES* = Total fatalities aggregated by event type
+2. *TOTAL_INJURIES* = Total injuries damage costs aggregated by event type
+
+We are going to depict the first 20 more dangerous weather events.
+
+```{r}
+
+## Fatalities: Group by event types and summarise totals
+humanDamageDataFat <- group_by(damageData, EVTYPE) %>% summarise(TOTAL_FATALITIES = sum(FATALITIES)) %>%
+     arrange(desc(TOTAL_FATALITIES)) %>% head(20)
+
+## Injuries: Group by event types and summarise totals
+humanDamageDataInj <- group_by(damageData, EVTYPE) %>% summarise(TOTAL_INJURIES = sum(INJURIES)) %>%
+     arrange(desc(TOTAL_INJURIES)) %>% head(20)
+
+```
+
+
+And here the R code chunk to create the plots (Fatalities and Injuries).
+
+```{r}
+#Layout for graphics
+par(mfrow = c(1, 2), mar = c(12, 4, 3, 2), mgp = c(3, 1, 0), cex = 0.8)
+#Barplot for Fatalities
+barplot(humanDamageDataFat$TOTAL_FATALITIES, las = 3, names.arg = humanDamageDataFat$EVTYPE, main = "Top 20 Highest Fatalities", 
+        ylab = "Number of fatalities", col = "red")
+#Barplot for Injuries
+barplot(humanDamageDataInj$TOTAL_INJURIES, las = 3, names.arg = humanDamageDataInj$EVTYPE, main = "Top 20 Highest Injuries", 
+        ylab = "Number of injuries", col = "blue")
+```
+
+
+And here the table with the 20 most dangerous weather events
+
+<br>
+*Injuries*
+
+```{r}
+humanDamageDataInj
+```
+<br>
+*Fatalities*
+
+```{r}
+humanDamageDataFat
+```
+<br>
+**ECONOMIC DAMAGE COSTS**
+
+We aggregate data by weather event types (EVTYPE). So two fields have been added to our table:
+
+1. *TOTAL_PROPDMGVAL* = Total Property damage costs aggregated by event type
+2. *TOTAL_CROPDMGVAL* = Total Crop damage costs aggregated by event type
+
+We are depicting the first 20 greater economic costs due to severe weather events.
+
+```{r}
+## Property costs: Group by event types and summarise totals
+economicDamageDataProp <- group_by(damageData, EVTYPE) %>% summarise(TOTAL_PROPDMGVAL = sum(PROPDMGVAL)) %>%
+     arrange(desc(TOTAL_PROPDMGVAL)) %>% head(20)
+## Crop costs: Group by event types and summarise totals
+economicDamageDataCrop <- group_by(damageData, EVTYPE) %>% summarise(TOTAL_CROPDMGVAL = sum(CROPDMGVAL)) %>%
+     arrange(desc(TOTAL_CROPDMGVAL)) %>% head(20)
+```
+
+
+And here the R code chunk to create the plots (Property costs and Crop costs).
+
+```{r}
+#Layout for graphics
+par(mfrow = c(1, 2), mar = c(12, 4, 3, 2), mgp = c(3, 1, 0), cex = 0.8)
+#Barplot for Property damages
+barplot(economicDamageDataProp$TOTAL_PROPDMGVAL/1000000, las = 3, names.arg = economicDamageDataProp$EVTYPE, main = "Top 20 greatest property costs", 
+        ylab = "Property costs (millions USD)", col = "red")
+#Barplot for Crop damages
+barplot(economicDamageDataCrop$TOTAL_CROPDMGVAL/1000000, las = 3, names.arg = economicDamageDataCrop$EVTYPE, main = "Top 20 greatest crop costs", 
+        ylab = "Crop costs (millions USD)", col = "blue")
+```
+
+
+And here the table with the 20 most dangerous weather events
+
+<br>
+*Property costs (USD)*
+
+```{r}
+economicDamageDataProp
+```
+
+<br>
+*Crop costs (USD)*
+
+```{r}
+economicDamageDataCrop
+```
